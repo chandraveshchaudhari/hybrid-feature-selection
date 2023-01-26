@@ -1,4 +1,3 @@
-# logistic regression
 from sklearn.linear_model import LogisticRegression
 from sklearn import svm
 import numpy as np
@@ -10,6 +9,7 @@ from tensorflow.keras import layers
 from tensorflow.keras import losses
 
 
+# logistic regression
 def get_logistic_regression(X_train, y_train, X_test, y_test):
     clf = LogisticRegression(max_iter=1000)
     clf.fit(X_train, y_train)

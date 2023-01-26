@@ -4,6 +4,7 @@ Try to use absolute import and reduce cyclic imports to avoid errors
 if there are more than one modules then import like this:
 from feature_selection import sample_func
 """
+import numpy as np
 from sklearn.feature_selection import SelectKBest
 from sklearn.svm import SVC
 from sklearn.feature_selection import RFE
@@ -18,6 +19,42 @@ from skrebate import ReliefF, MultiSURF, TuRF
 from skrebate import SURF
 from skrebate import SURFstar
 from skrebate import MultiSURFstar
+from sklearn.feature_selection import VarianceThreshold
+
+
+def variance_filter(data, inplace=True, threshold=0):
+    sel = VarianceThreshold(threshold)
+    if inplace:
+        sel.fit_transform(data)
+        return data
+    modified_data = data.copy()
+    return sel.fit_transform(modified_data)
+
+
+def correlation_filter(data, threshold=0.99):
+    """Hall, M. A. (2000). Correlation-based feature selection of discrete and numeric class machine learning
+
+    Parameters
+    ----------
+    threshold
+    data
+
+    Returns
+    -------
+
+    """
+
+    # create correlation  matrix
+    corr_matrix = data.corr().abs()
+
+    # select upper triangle of correlation matrix
+    upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
+    # Find index of columns with correlation greater than threshold
+    to_drop = [column for column in upper.columns if any(upper[column] > threshold)]
+
+    # drop the columns
+    modified_data = data.drop(to_drop, axis=1)
+    return modified_data
 
 
 def converting_feature_importance_to_sorted_dict(headers, fs_feature_importances):
