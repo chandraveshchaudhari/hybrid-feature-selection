@@ -35,7 +35,7 @@ setuptools.setup(
     # There are some restrictions on what makes a valid project name
     # specification here:
     # https://packaging.python.org/specifications/core-metadata/#name
-    name='sampleproject',  # Required
+    name='feature-selectionpy',  # Required
 
     # name="browser-automationpy-CHANDRAVESH-CHAUDHARI",
     # Versions should comply with PEP 440:

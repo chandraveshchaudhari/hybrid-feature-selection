@@ -1,25 +1,6 @@
 from collections import defaultdict
 
 
-def sample_func(word: str):
-    """
-    this is a sample func for demonstration of numpy docstring and import methods
-
-    Parameters
-    ----------
-    word : str
-        this is any string word to pass in function
-
-    Returns
-    -------
-    str
-        this is output with some added text to word
-
-    """
-    output = f"this is how this function print: {word}"
-    return output
-
-
 class HybridFeatureSelection:
     def __init__(self, data=None, headers=None, labels=None, type_of_algorithm="all"):
         self.labels = labels
@@ -47,3 +28,5 @@ class HybridFeatureSelection:
                     else:
                         counter_dict[i] = 1
         return counter_dict
+
+
