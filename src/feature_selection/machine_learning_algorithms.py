@@ -1,12 +1,9 @@
 from sklearn.linear_model import LogisticRegression
 from sklearn import svm
-import numpy as np
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 from sklearn.neighbors import KNeighborsClassifier
-import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import layers
-from tensorflow.keras import losses
+from keras import layers
 
 
 # logistic regression
@@ -74,3 +71,20 @@ def get_neural_network(X_train, y_train, X_test, y_test):
 
     return accuracy_score(y_test, y_pred) * 100, precision_score(y_test, y_pred) * 100, recall_score(y_test,
                                                                                                      y_pred) * 100
+
+
+class ModelTesting:
+    def __init__(self, X_train, y_train, X_test, y_test):
+        self.y_test = y_test
+        self.X_test = X_test
+        self.y_train = y_train
+        self.X_train = X_train
+
+    def get_all_models(self):
+        return [get_logistic_regression(self.X_train, self.y_train, self.X_test, self.y_test),
+                get_smv_svc(self.X_train, self.y_train, self.X_test, self.y_test),
+                get_k_neighbors_classifier(self.X_train, self.y_train, self.X_test, self.y_test),
+                get_random_forest(self.X_train, self.y_train, self.X_test, self.y_test),
+                get_neural_network(self.X_train, self.y_train, self.X_test, self.y_test)
+                ]
+

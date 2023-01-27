@@ -22,39 +22,66 @@ from skrebate import MultiSURFstar
 from sklearn.feature_selection import VarianceThreshold
 
 
-def variance_filter(data, inplace=True, threshold=0):
-    sel = VarianceThreshold(threshold)
-    if inplace:
-        sel.fit_transform(data)
-        return data
-    modified_data = data.copy()
-    return sel.fit_transform(modified_data)
+class Filter:
+    def __init__(self, data):
+        self.data = data
 
+    def variance_filter(self, dataset=None, threshold=0.0, inplace=False):
+        sel = VarianceThreshold(threshold)
+        if dataset:
+            if inplace:
+                sel.fit_transform(dataset)
+                return dataset
+            modified_data = dataset.copy()
+            return sel.fit_transform(modified_data)
+        else:
+            if inplace:
+                sel.fit_transform(self.data)
+                return self.data
+            modified_data = self.data.copy()
+            return sel.fit_transform(modified_data)
 
-def correlation_filter(data, threshold=0.99):
-    """Hall, M. A. (2000). Correlation-based feature selection of discrete and numeric class machine learning
+    def correlation_filter(self, dataset=None, threshold=0.99):
+        """Hall, M. A. (2000). Correlation-based feature selection of discrete and numeric class machine learning
 
-    Parameters
-    ----------
-    threshold
-    data
+        Parameters
+        ----------
+        dataset
+        threshold
 
-    Returns
-    -------
+        Returns
+        -------
 
-    """
+        """
 
-    # create correlation  matrix
-    corr_matrix = data.corr().abs()
+        if dataset:
+            # create correlation  matrix
+            corr_matrix = dataset.corr().abs()
 
-    # select upper triangle of correlation matrix
-    upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
-    # Find index of columns with correlation greater than threshold
-    to_drop = [column for column in upper.columns if any(upper[column] > threshold)]
+            # select upper triangle of correlation matrix
+            upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
+            # Find index of columns with correlation greater than threshold
+            to_drop = [column for column in upper.columns if any(upper[column] > threshold)]
 
-    # drop the columns
-    modified_data = data.drop(to_drop, axis=1)
-    return modified_data
+            # drop the columns
+            modified_data = dataset.drop(to_drop, axis=1)
+            return modified_data
+        else:
+            # create correlation  matrix
+            corr_matrix = self.data.corr().abs()
+
+            # select upper triangle of correlation matrix
+            upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
+            # Find index of columns with correlation greater than threshold
+            to_drop = [column for column in upper.columns if any(upper[column] > threshold)]
+
+            # drop the columns
+            modified_data = self.data.drop(to_drop, axis=1)
+            return modified_data
+
+    def sequential_all(self, variance_threshold=0.0, correlation_threshold=0.99):
+        modified_data = self.variance_filter(self.data, variance_threshold)
+        return self.correlation_filter(modified_data, correlation_threshold)
 
 
 def converting_feature_importance_to_sorted_dict(headers, fs_feature_importances):
@@ -65,14 +92,12 @@ def converting_feature_importance_to_sorted_dict(headers, fs_feature_importances
     return dict(sorted(result.items(), key=lambda item: item[1], reverse=True))
 
 
-class FeatureSelection:
+class FeatureSelectionNamesOut:
     def __init__(self, clf_data, clf_y, number_of_top_features_to_select=None):
         self.clf_y = clf_y
         self.clf_data = clf_data
         self.k = number_of_top_features_to_select
-        self.features = clf_data.values
         self.labels = clf_y.values
-        self.headers = clf_data.columns
 
     def get_select_k_best(self):
         sel = SelectKBest(k=self.k).fit(self.clf_data, self.clf_y)
@@ -97,11 +122,22 @@ class FeatureSelection:
 
     def get_sequential_feature_selector_logistic_regression_classifier(self):
         lclf = LogisticRegression()
-        sel = SequentialFeatureSelector(lclf, k_features=self.k, forward=True, verbose=1, scoring='neg_mean_squared_error')
+        sel = SequentialFeatureSelector(lclf, k_features=self.k, forward=True, verbose=1,
+                                        scoring='neg_mean_squared_error')
         sel.fit(self.clf_data, self.clf_y)
         return list(sel.k_feature_names_)
 
-# names and scores
+
+class FeatureSelectionNamesScore:
+    def __init__(self, clf_data, clf_y, number_of_top_features_to_select=None):
+        self.clf_y = clf_y
+        self.clf_data = clf_data
+        self.k = number_of_top_features_to_select
+        self.features = clf_data.values
+        self.labels = clf_y.values
+        self.headers = clf_data.columns
+
+    # names and scores
     def get_relief_f(self):
         fs = ReliefF(n_features_to_select=self.k, n_neighbors=100)
         fs.fit(self.features, self.labels)
@@ -134,6 +170,12 @@ class FeatureSelection:
         fs.fit(self.features, self.labels, self.headers)
         return converting_feature_importance_to_sorted_dict(self.headers, fs.feature_importances_)
 
+
+class FeatureSelectionAuto:
+    def __init__(self, clf_data, clf_y):
+        self.clf_y = clf_y
+        self.clf_data = clf_data
+
     # no need of k
     def select_from_model_l1_based(self):
         lsvc = LinearSVC(C=0.01, penalty="l1", dual=False).fit(self.clf_data, self.clf_y)
@@ -146,12 +188,38 @@ class FeatureSelection:
         sel = SelectFromModel(clf, prefit=True)
         return list(sel.get_feature_names_out(self.clf_data.columns))
 
+    def get_all(self):
+        return [self.select_from_model_l1_based(), self.select_from_model_tree_based()]
 
 
+class AllFeatureSelection:
+    def __init__(self, clf_data, clf_y, number_of_top_features_to_select=None):
+        self.clf_y = clf_y
+        self.clf_data = clf_data
+        self.k = number_of_top_features_to_select
+        self.labels = clf_y.values
 
+    def get_names_out(self, number_of_top_features_to_select):
+        sel = FeatureSelectionNamesOut(self.clf_data, self.clf_y, number_of_top_features_to_select)
+        sel_result_list = [sel.get_sequential_feature_selector_logistic_regression_classifier(),
+                           sel.get_select_k_best(),
+                           sel.get_sequential_feature_selector_k_neighbors_classifier(),
+                           sel.recursive_feature_elimination_relief_f(),
+                           sel.recursive_feature_elimination_svc()]
+        return sel_result_list
 
+    def get_names_score_out(self, number_of_top_features_to_select):
+        sel = FeatureSelectionNamesScore(self.clf_data, self.clf_y, number_of_top_features_to_select)
+        sel_result_list = [sel.get_multi_surf(),
+                           sel.get_multi_surf_star(),
+                           sel.get_relief_f(),
+                           sel.get_turf(),
+                           sel.get_surf(),
+                           sel.get_surf_star()]
+        return sel_result_list
 
-
-
-
+    def get_names_from_all(self, number_of_top_features_to_select):
+        result = self.get_names_out(number_of_top_features_to_select).append(
+                 self.get_names_score_out(number_of_top_features_to_select))
+        return result
 
