@@ -11,9 +11,9 @@ from sklearn.feature_selection import RFE
 from sklearn.svm import LinearSVC
 from sklearn.feature_selection import SelectFromModel
 from sklearn.ensemble import ExtraTreesClassifier
-from sklearn.feature_selection import SequentialFeatureSelector
+from sklearn.feature_selection import SequentialFeatureSelector as sklearn_sfs
 from sklearn.neighbors import KNeighborsClassifier
-from mlxtend.feature_selection import SequentialFeatureSelector
+from mlxtend.feature_selection import SequentialFeatureSelector as mlxtend_sfs
 from sklearn.linear_model import LogisticRegression
 from skrebate import ReliefF, MultiSURF, TuRF
 from skrebate import SURF
@@ -28,18 +28,17 @@ class Filter:
 
     def variance_filter(self, dataset=None, threshold=0.0, inplace=False):
         sel = VarianceThreshold(threshold)
-        if dataset:
+        if dataset is not None:
             if inplace:
-                sel.fit_transform(dataset)
-                return dataset
-            modified_data = dataset.copy()
-            return sel.fit_transform(modified_data)
+                # might not work
+                sel.fit(dataset)
+                return dataset[dataset.columns[sel.get_support(indices=True)]]
+
+            sel.fit(dataset)
+            return dataset[dataset.columns[sel.get_support(indices=True)]]
         else:
-            if inplace:
-                sel.fit_transform(self.data)
-                return self.data
-            modified_data = self.data.copy()
-            return sel.fit_transform(modified_data)
+            sel.fit(self.data)
+            return self.data[self.data.columns[sel.get_support(indices=True)]]
 
     def correlation_filter(self, dataset=None, threshold=0.99):
         """Hall, M. A. (2000). Correlation-based feature selection of discrete and numeric class machine learning
@@ -54,7 +53,7 @@ class Filter:
 
         """
 
-        if dataset:
+        if dataset is not None:
             # create correlation  matrix
             corr_matrix = dataset.corr().abs()
 
@@ -116,14 +115,14 @@ class FeatureSelectionNamesOut:
 
     def get_sequential_feature_selector_k_neighbors_classifier(self):
         knn = KNeighborsClassifier(n_neighbors=3)
-        sel = SequentialFeatureSelector(knn, n_features_to_select=self.k)
+        sel = sklearn_sfs(knn, n_features_to_select=self.k)
         sel.fit(self.clf_data, self.clf_y)
         return list(sel.get_feature_names_out(self.clf_data.columns))
 
     def get_sequential_feature_selector_logistic_regression_classifier(self):
         lclf = LogisticRegression()
-        sel = SequentialFeatureSelector(lclf, k_features=self.k, forward=True, verbose=1,
-                                        scoring='neg_mean_squared_error')
+        sel = mlxtend_sfs(lclf, k_features=self.k, forward=True, verbose=1,
+                          scoring='neg_mean_squared_error')
         sel.fit(self.clf_data, self.clf_y)
         return list(sel.k_feature_names_)
 
@@ -199,8 +198,8 @@ class AllFeatureSelection:
         self.k = number_of_top_features_to_select
         self.labels = clf_y.values
 
-    def get_names_out(self, number_of_top_features_to_select):
-        sel = FeatureSelectionNamesOut(self.clf_data, self.clf_y, number_of_top_features_to_select)
+    def get_names_out(self):
+        sel = FeatureSelectionNamesOut(self.clf_data, self.clf_y, self.k)
         sel_result_list = [sel.get_sequential_feature_selector_logistic_regression_classifier(),
                            sel.get_select_k_best(),
                            sel.get_sequential_feature_selector_k_neighbors_classifier(),
@@ -208,8 +207,8 @@ class AllFeatureSelection:
                            sel.recursive_feature_elimination_svc()]
         return sel_result_list
 
-    def get_names_score_out(self, number_of_top_features_to_select):
-        sel = FeatureSelectionNamesScore(self.clf_data, self.clf_y, number_of_top_features_to_select)
+    def get_names_score_out(self):
+        sel = FeatureSelectionNamesScore(self.clf_data, self.clf_y, self.k)
         sel_result_list = [sel.get_multi_surf(),
                            sel.get_multi_surf_star(),
                            sel.get_relief_f(),
@@ -218,8 +217,7 @@ class AllFeatureSelection:
                            sel.get_surf_star()]
         return sel_result_list
 
-    def get_names_from_all(self, number_of_top_features_to_select):
-        result = self.get_names_out(number_of_top_features_to_select).append(
-                 self.get_names_score_out(number_of_top_features_to_select))
+    def get_names_from_all(self):
+        result = self.get_names_out().append(
+            self.get_names_score_out())
         return result
-

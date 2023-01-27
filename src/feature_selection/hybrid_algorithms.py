@@ -117,8 +117,8 @@ class HybridSubsetFeatureSelection:
 
         for number_of_top_features_to_select in range(1, len(modified_columns)):
             feature_selection_data = AllFeatureSelection(modified_data,
-                                                         self.clf_y).get_names_from_all(
-                number_of_top_features_to_select)
+                                                         self.clf_y,
+                                                         number_of_top_features_to_select).get_names_from_all()
 
             for subset_columns in feature_selection_data:
                 if subset_columns is dict:
