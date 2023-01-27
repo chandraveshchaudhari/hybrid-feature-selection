@@ -101,48 +101,71 @@ def get_subset_data_based_on_columns(data, subset_columns_list):
 
 
 class HybridSubsetFeatureSelection:
-    def __init__(self, clf_data, clf_y):
+    def __init__(self, clf_data=None, clf_y=None, json_path='Hybrid_subset_feature_selection_data.json'):
+        self.json_path = json_path
         self.clf_y = clf_y
         self.clf_data = clf_data
-        self.saved_results = FeaturesData()
+        self.saved_results = dict()
 
-    def get_best_subset(self, apply_filter=True):
+    def generate_subsets(self, apply_filter=True):
         if apply_filter:
             modified_data = Filter(self.clf_data).sequential_all()
         else:
             modified_data = self.clf_data
 
-        for number_of_top_features_to_select in range(1, len(modified_data.columns)):
+        modified_columns = modified_data.columns
+
+        for number_of_top_features_to_select in range(1, len(modified_columns)):
             feature_selection_data = AllFeatureSelection(modified_data,
                                                          self.clf_y).get_names_from_all(
                 number_of_top_features_to_select)
 
             for subset_columns in feature_selection_data:
-                if subset_columns in self.saved_results:  # dynamic_programming_dict
+                if subset_columns is dict:
+                    subset_columns = list(subset_columns.keys())
+
+                if tuple(subset_columns) in self.saved_results[tuple(modified_columns)]:  # dynamic_programming_dict
                     continue
 
                 subset_data = get_subset_data_based_on_columns(modified_data, subset_columns)
 
+                cv_number = 1
                 for dataset in CrossValidationKFold(subset_data, self.clf_y).get_all_folds():
+                    cv_name = f"fold_{cv_number}"
+                    cv_number += 1
 
-                    ModelTesting(dataset[0], dataset[1], dataset[2], dataset[3]).get_all_models()
+                    metric_data = ModelTesting(dataset[0], dataset[1], dataset[2], dataset[3]).get_all_models()
+                    self.saved_results[tuple(modified_columns)][tuple(subset_columns)][cv_name] = metric_data
+                    self.update_json()
 
         feature_selection_data = FeatureSelectionAuto(modified_data, self.clf_y).get_all()
+
         for subset_columns in feature_selection_data:
-            if subset_columns in self.saved_results:  # dynamic_programming_dict
+
+            if tuple(subset_columns) in self.saved_results[tuple(modified_columns)]:  # dynamic_programming_dict
                 continue
 
             subset_data = get_subset_data_based_on_columns(modified_data, subset_columns)
 
+            cv_number = 1
             for dataset in CrossValidationKFold(subset_data, self.clf_y).get_all_folds():
-                ModelTesting(dataset[0], dataset[1], dataset[2], dataset[3]).get_all_models()
+                cv_name = f"fold_{cv_number}"
+                cv_number += 1
 
-    def get_all_feature_selection_info(self):
-        pass
+                metric_data = ModelTesting(dataset[0], dataset[1], dataset[2], dataset[3]).get_all_models()
+                self.saved_results[tuple(modified_columns)][tuple(subset_columns)][cv_name] = metric_data
+                self.update_json()
+
+    def update_json(self):
+        write_json_file_with_dict(self.json_path, self.saved_results)
+
+    def get_all_json_info(self, path=None):
+        if path:
+            return json_file_to_dict(path)
+        return json_file_to_dict(self.json_path)
 
     def get_features_ranking(self):
         pass
 
     def get_test_metrics(self):
         pass
-
