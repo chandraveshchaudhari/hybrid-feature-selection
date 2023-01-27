@@ -3,7 +3,7 @@ from collections import defaultdict
 import pandas as pd
 from systematic_review.converter import write_json_file_with_dict, json_file_to_dict
 
-from feature_selection.algorithms import Filter, AllFeatureSelection
+from feature_selection.algorithms import Filter, AllFeatureSelection, FeatureSelectionAuto
 from feature_selection.machine_learning_algorithms import ModelTesting
 
 
@@ -127,6 +127,16 @@ class HybridSubsetFeatureSelection:
 
                     ModelTesting(dataset[0], dataset[1], dataset[2], dataset[3]).get_all_models()
 
+        feature_selection_data = FeatureSelectionAuto(modified_data, self.clf_y).get_all()
+        for subset_columns in feature_selection_data:
+            if subset_columns in self.saved_results:  # dynamic_programming_dict
+                continue
+
+            subset_data = get_subset_data_based_on_columns(modified_data, subset_columns)
+
+            for dataset in CrossValidationKFold(subset_data, self.clf_y).get_all_folds():
+                ModelTesting(dataset[0], dataset[1], dataset[2], dataset[3]).get_all_models()
+
     def get_all_feature_selection_info(self):
         pass
 
@@ -135,5 +145,4 @@ class HybridSubsetFeatureSelection:
 
     def get_test_metrics(self):
         pass
-
 
