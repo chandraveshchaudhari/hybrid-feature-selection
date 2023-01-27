@@ -183,6 +183,7 @@ class FeatureSelectionNamesScore:
             fs.fit(self.features, self.labels, self.headers)
             return converting_feature_importance_to_sorted_dict(self.headers, fs.feature_importances_)
         except AttributeError:
+            print("AttributeError")
             return None
 
 

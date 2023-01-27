@@ -62,6 +62,7 @@ class CrossValidationKFold:
         return result
 
     def get_all_folds(self):
+        # problem in fold 2>>>> showing null values
         kfolds_index_list = self.k_fold_steps()
 
         kfolds_datasets = []
@@ -114,6 +115,7 @@ class HybridSubsetFeatureSelection:
             modified_data = self.clf_data
 
         modified_columns = modified_data.columns
+        self.saved_results[tuple(modified_columns)] = dict()
 
         for number_of_top_features_to_select in range(1, len(modified_columns)):
             print(number_of_top_features_to_select)
@@ -139,8 +141,9 @@ class HybridSubsetFeatureSelection:
                     cv_number += 1
 
                     metric_data = ModelTesting(dataset[0], dataset[1], dataset[2], dataset[3]).get_all_models()
-                    self.saved_results[tuple(modified_columns)][tuple(subset_columns)][cv_name] = metric_data
-                    self.update_json()
+                    self.saved_results[tuple(modified_columns)][tuple(subset_columns)] = {cv_name: metric_data}
+                    #self.update_json()
+                    print(self.saved_results)
 
         feature_selection_data = FeatureSelectionAuto(modified_data, self.clf_y).get_all()
 
@@ -160,8 +163,9 @@ class HybridSubsetFeatureSelection:
                 cv_number += 1
 
                 metric_data = ModelTesting(dataset[0], dataset[1], dataset[2], dataset[3]).get_all_models()
-                self.saved_results[tuple(modified_columns)][tuple(subset_columns)][cv_name] = metric_data
-                self.update_json()
+                self.saved_results[tuple(modified_columns)][tuple(subset_columns)] = {cv_name: metric_data}
+                #self.update_json()
+                print(self.saved_results)
 
     def update_json(self):
         write_json_file_with_dict(self.json_path, self.saved_results)
