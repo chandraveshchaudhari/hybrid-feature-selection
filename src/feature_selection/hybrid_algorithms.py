@@ -116,6 +116,7 @@ class HybridSubsetFeatureSelection:
         modified_columns = modified_data.columns
 
         for number_of_top_features_to_select in range(1, len(modified_columns)):
+            print(number_of_top_features_to_select)
             feature_selection_data = AllFeatureSelection(modified_data,
                                                          self.clf_y,
                                                          number_of_top_features_to_select).get_names_from_all()
@@ -123,6 +124,9 @@ class HybridSubsetFeatureSelection:
             for subset_columns in feature_selection_data:
                 if subset_columns is dict:
                     subset_columns = list(subset_columns.keys())
+
+                if subset_columns is None:
+                    continue
 
                 if tuple(subset_columns) in self.saved_results[tuple(modified_columns)]:  # dynamic_programming_dict
                     continue
@@ -141,6 +145,9 @@ class HybridSubsetFeatureSelection:
         feature_selection_data = FeatureSelectionAuto(modified_data, self.clf_y).get_all()
 
         for subset_columns in feature_selection_data:
+
+            if subset_columns is None:
+                continue
 
             if tuple(subset_columns) in self.saved_results[tuple(modified_columns)]:  # dynamic_programming_dict
                 continue
