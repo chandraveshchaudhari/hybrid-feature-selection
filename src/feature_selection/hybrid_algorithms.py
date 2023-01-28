@@ -101,6 +101,32 @@ def get_subset_data_based_on_columns(data, subset_columns_list):
     return data[subset_columns_list]
 
 
+def add_data_in_tree_dict(entry_point_dict_node,
+                          feature_selection_data=None, modified_data=None, clf_y=None):
+    for feature_algorithm_name, subset_columns in feature_selection_data.items():
+        if subset_columns is dict:
+            subset_columns = list(subset_columns.keys())
+
+        if subset_columns is None:
+            continue
+
+        if tuple(subset_columns) in entry_point_dict_node:  # dynamic_programming_dict
+            continue
+
+        entry_point_dict_node[tuple(subset_columns)] = dict()
+        entry_point_dict_node[tuple(subset_columns)][feature_algorithm_name] = dict()
+
+        subset_data = get_subset_data_based_on_columns(modified_data, subset_columns)
+
+        cv_number = 1
+        for dataset in CrossValidationKFold(subset_data, clf_y).get_all_folds():
+            cv_name = f"fold_{cv_number}"
+            cv_number += 1
+
+            metric_data = ModelTesting(dataset[0], dataset[1], dataset[2], dataset[3]).get_all_models()
+            entry_point_dict_node[tuple(subset_columns)][feature_algorithm_name][cv_name] = metric_data
+
+
 class HybridSubsetFeatureSelection:
     def __init__(self, clf_data=None, clf_y=None, path='Hybrid_subset_feature_selection_data.xlsx'):
         self.path = path
@@ -126,69 +152,39 @@ class HybridSubsetFeatureSelection:
             feature_selection_data = AllFeatureSelection(modified_data,
                                                          self.clf_y,
                                                          number_of_top_features_to_select).get_names_from_all()
-
-            for subset_columns in feature_selection_data:
-                if subset_columns is dict:
-                    subset_columns = list(subset_columns.keys())
-
-                if subset_columns is None:
-                    continue
-
-                if tuple(subset_columns) in self.saved_results[tuple(modified_columns)]:  # dynamic_programming_dict
-                    continue
-                self.saved_results[tuple(modified_columns)][tuple(subset_columns)] = dict()
-
-                subset_data = get_subset_data_based_on_columns(modified_data, subset_columns)
-
-                cv_number = 1
-                for dataset in CrossValidationKFold(subset_data, self.clf_y).get_all_folds():
-                    cv_name = f"fold_{cv_number}"
-                    cv_number += 1
-
-                    metric_data = ModelTesting(dataset[0], dataset[1], dataset[2], dataset[3]).get_all_models()
-                    self.saved_results[tuple(modified_columns)][tuple(subset_columns)][cv_name] = metric_data
+            add_data_in_tree_dict(self.saved_results[tuple(modified_columns)], feature_selection_data,
+                                  modified_data, self.clf_y)
 
         feature_selection_data = FeatureSelectionAuto(modified_data, self.clf_y).get_all()
 
-        for subset_columns in feature_selection_data:
-
-            if subset_columns is None:
-                continue
-
-            if tuple(subset_columns) in self.saved_results[tuple(modified_columns)]:  # dynamic_programming_dict
-                continue
-            self.saved_results[tuple(modified_columns)][tuple(subset_columns)] = dict()
-
-            subset_data = get_subset_data_based_on_columns(modified_data, subset_columns)
-
-            cv_number = 1
-            for dataset in CrossValidationKFold(subset_data, self.clf_y).get_all_folds():
-                cv_name = f"fold_{cv_number}"
-                cv_number += 1
-
-                metric_data = ModelTesting(dataset[0], dataset[1], dataset[2], dataset[3]).get_all_models()
-                self.saved_results[tuple(modified_columns)][tuple(subset_columns)][cv_name] = metric_data
+        add_data_in_tree_dict(self.saved_results[tuple(modified_columns)], feature_selection_data,
+                              modified_data, self.clf_y)
 
         self.save_info()
 
     def create_records_list(self):
         records_list = []
-
+        # [tuple(subset_columns)][feature_algorithm_name][cv_name]
         for modified_cols in self.saved_results.keys():
 
             for subsets in self.saved_results[modified_cols].keys():
 
-                for cv in self.saved_results[modified_cols][subsets].keys():
+                for fs in self.saved_results[modified_cols][subsets].keys():
 
-                    for mls in self.saved_results[modified_cols][subsets][cv].keys():
-                        record = {'After Filter Columns': modified_cols,
-                                  'Subset': subsets,
-                                  'Subset Length': len(subsets),
-                                  'Cross validation': cv,
-                                  'Machine Learning Algorithm': mls,
-                                  **self.saved_results[modified_cols][subsets][cv][mls]
-                                  }
-                        records_list.append(record)
+                    for cv in self.saved_results[modified_cols][subsets][fs].keys():
+
+                        for mls in self.saved_results[modified_cols][subsets][fs][cv].keys():
+
+                            record = {'After Filter Columns': modified_cols,
+                                      'Subset': subsets,
+                                      'Subset Length': len(subsets),
+                                      'Feature Selection Algorithm': fs,
+                                      'Cross validation': cv,
+                                      'Machine Learning Algorithm': mls,
+                                      **self.saved_results[modified_cols][subsets][fs][cv][mls]
+                                      }
+
+                            records_list.append(record)
 
         return records_list
 

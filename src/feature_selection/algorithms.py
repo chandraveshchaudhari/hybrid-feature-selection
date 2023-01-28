@@ -207,7 +207,8 @@ class FeatureSelectionAuto:
         return list(sel.get_feature_names_out(self.clf_data.columns))
 
     def get_all(self):
-        return [self.select_from_model_l1_based(), self.select_from_model_tree_based()]
+        return {'select_from_model_l1_based': self.select_from_model_l1_based(),
+                'select_from_model_tree_based': self.select_from_model_tree_based()}
 
 
 class AllFeatureSelection:
@@ -219,12 +220,13 @@ class AllFeatureSelection:
 
     def get_names_out(self):
         sel = FeatureSelectionNamesOut(self.clf_data, self.clf_y, self.k)
-        sel_result_list = [sel.get_sequential_feature_selector_logistic_regression_classifier(),
-                           sel.get_select_k_best(),
-                           sel.get_sequential_feature_selector_k_neighbors_classifier(),
-                           sel.recursive_feature_elimination_relief_f(),
-                           sel.recursive_feature_elimination_svc()]
-        return sel_result_list
+        sel_result_dict = {
+            'sequential_feature_selector_logistic_regression_classifier': sel.get_sequential_feature_selector_logistic_regression_classifier(),
+            'select_k_best': sel.get_select_k_best(),
+            'sequential_feature_selector_k_neighbors_classifier': sel.get_sequential_feature_selector_k_neighbors_classifier(),
+            'recursive_feature_elimination_relief_f': sel.recursive_feature_elimination_relief_f(),
+            'recursive_feature_elimination_svc': sel.recursive_feature_elimination_svc()}
+        return sel_result_dict
 
     def get_names_score_out(self):
         sel = FeatureSelectionNamesScore(self.clf_data, self.clf_y, self.k)
@@ -238,8 +240,17 @@ class AllFeatureSelection:
         for res in sel_result_list:
             if res is not None:
                 result.append(list(res.keys()))
-        return result
+            else:
+                result.append(None)
+
+        result_dict = {'multi surf': result[0],
+                       'multi surf star': result[1],
+                       'relief f': result[2],
+                       'turf': result[3],
+                       'surf': result[4],
+                       'surf_star': result[5]}
+        return result_dict
 
     def get_names_from_all(self):
-        result = self.get_names_out() + self.get_names_score_out()
-        return result
+        result_dict = {**self.get_names_out(), **self.get_names_score_out()}
+        return result_dict
