@@ -113,8 +113,10 @@ def add_data_in_tree_dict(entry_point_dict_node,
         if tuple(subset_columns) in entry_point_dict_node:  # dynamic_programming_dict
             continue
 
-        entry_point_dict_node[tuple(subset_columns)] = dict()
-        entry_point_dict_node[tuple(subset_columns)][feature_algorithm_name] = dict()
+        if not entry_point_dict_node[tuple(subset_columns)]:
+            entry_point_dict_node[tuple(subset_columns)] = dict()
+        if not entry_point_dict_node[tuple(subset_columns)][feature_algorithm_name]:
+            entry_point_dict_node[tuple(subset_columns)][feature_algorithm_name] = dict()
 
         subset_data = get_subset_data_based_on_columns(modified_data, subset_columns)
 
@@ -169,18 +171,22 @@ class HybridSubsetFeatureSelection:
         modified_columns = modified_data.columns
         if not number_of_top_features_to_select_end:
             number_of_top_features_to_select_end = len(modified_columns)
-        self.saved_results[tuple(modified_columns)] = dict()
+
+        if not self.saved_results[tuple(modified_columns)]:
+            self.saved_results[tuple(modified_columns)] = dict()
 
         for number_of_top_features_to_select in range(number_of_top_features_to_select_start,
                                                       number_of_top_features_to_select_end):
-            print(number_of_top_features_to_select)
+            string_writer(f"Iteration : {number_of_top_features_to_select} \n")
             feature_selection_data = AllFeatureSelection(modified_data,
                                                          self.clf_y,
                                                          number_of_top_features_to_select).get_names_from_all()
             add_data_in_tree_dict(self.saved_results[tuple(modified_columns)], feature_selection_data,
                                   modified_data, self.clf_y)
+            self.save_info(f"iteration_{number_of_top_features_to_select}.xlsx")
 
         feature_selection_data = FeatureSelectionAuto(modified_data, self.clf_y).get_all()
+        string_writer(f"auto feature selection \n")
 
         add_data_in_tree_dict(self.saved_results[tuple(modified_columns)], feature_selection_data,
                               modified_data, self.clf_y)
@@ -227,3 +233,8 @@ class HybridSubsetFeatureSelection:
 def save_records_list_to_excel(data, path="generated_excel_file.xlsx"):
 
     return records_list_to_dataframe(data).to_excel(path)
+
+
+def string_writer(data_string, path='log_file.txt'):
+    with open(path, 'a+') as file:
+        file.writelines(data_string)
