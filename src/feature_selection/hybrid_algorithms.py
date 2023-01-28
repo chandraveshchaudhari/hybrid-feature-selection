@@ -113,9 +113,9 @@ def add_data_in_tree_dict(entry_point_dict_node,
         if tuple(subset_columns) in entry_point_dict_node:  # dynamic_programming_dict
             continue
 
-        if not entry_point_dict_node[tuple(subset_columns)]:
+        if tuple(subset_columns) not in entry_point_dict_node:
             entry_point_dict_node[tuple(subset_columns)] = dict()
-        if not entry_point_dict_node[tuple(subset_columns)][feature_algorithm_name]:
+        if feature_algorithm_name not in entry_point_dict_node[tuple(subset_columns)]:
             entry_point_dict_node[tuple(subset_columns)][feature_algorithm_name] = dict()
 
         subset_data = get_subset_data_based_on_columns(modified_data, subset_columns)
@@ -124,8 +124,7 @@ def add_data_in_tree_dict(entry_point_dict_node,
                                              entry_point_dict_node[tuple(subset_columns)][feature_algorithm_name])
 
 
-def models_testing_with_cross_validation(clf_data=None, clf_y=None, output_data=None):
-    result = output_data if output_data else {}
+def models_testing_with_cross_validation(clf_data, clf_y, output_data):
 
     cv_number = 1
     for dataset in CrossValidationKFold(clf_data, clf_y).get_all_folds():
@@ -135,9 +134,9 @@ def models_testing_with_cross_validation(clf_data=None, clf_y=None, output_data=
 
         metric_data = ModelTesting(dataset[0], dataset[1], dataset[2], dataset[3]).get_all_models()
 
-        result[cv_name] = metric_data
+        output_data[cv_name] = metric_data
 
-    return result
+    return output_data
 
 
 def get_records_from_models_testing_with_cross_validation(clf_data=None, clf_y=None, output_data=None):
@@ -172,7 +171,7 @@ class HybridSubsetFeatureSelection:
         if not number_of_top_features_to_select_end:
             number_of_top_features_to_select_end = len(modified_columns)
 
-        if not self.saved_results[tuple(modified_columns)]:
+        if tuple(modified_columns) not in self.saved_results:
             self.saved_results[tuple(modified_columns)] = dict()
 
         for number_of_top_features_to_select in range(number_of_top_features_to_select_start,
