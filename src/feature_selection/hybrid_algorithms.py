@@ -118,13 +118,38 @@ def add_data_in_tree_dict(entry_point_dict_node,
 
         subset_data = get_subset_data_based_on_columns(modified_data, subset_columns)
 
-        cv_number = 1
-        for dataset in CrossValidationKFold(subset_data, clf_y).get_all_folds():
-            cv_name = f"fold_{cv_number}"
-            cv_number += 1
+        models_testing_with_cross_validation(subset_data, clf_y,
+                                             entry_point_dict_node[tuple(subset_columns)][feature_algorithm_name])
 
-            metric_data = ModelTesting(dataset[0], dataset[1], dataset[2], dataset[3]).get_all_models()
-            entry_point_dict_node[tuple(subset_columns)][feature_algorithm_name][cv_name] = metric_data
+
+def models_testing_with_cross_validation(clf_data=None, clf_y=None, output_data=None):
+    result = output_data if output_data else {}
+
+    cv_number = 1
+    for dataset in CrossValidationKFold(clf_data, clf_y).get_all_folds():
+        cv_name = f"fold_{cv_number}"
+        print(cv_name)
+        cv_number += 1
+
+        metric_data = ModelTesting(dataset[0], dataset[1], dataset[2], dataset[3]).get_all_models()
+
+        result[cv_name] = metric_data
+
+    return result
+
+
+def get_records_from_models_testing_with_cross_validation(clf_data=None, clf_y=None, output_data=None):
+    result = models_testing_with_cross_validation(clf_data, clf_y, output_data)
+
+    record_list = []
+    for cv_name in result.keys():
+        for ml in result[cv_name].keys():
+            record = {'Cross validation': cv_name,
+                      'Machine Learning Algorithm': ml,
+                      **result[cv_name][ml]
+                      }
+            record_list.append(record)
+    return record_list
 
 
 class HybridSubsetFeatureSelection:
@@ -174,7 +199,6 @@ class HybridSubsetFeatureSelection:
                     for cv in self.saved_results[modified_cols][subsets][fs].keys():
 
                         for mls in self.saved_results[modified_cols][subsets][fs][cv].keys():
-
                             record = {'After Filter Columns': modified_cols,
                                       'Subset': subsets,
                                       'Subset Length': len(subsets),
@@ -190,11 +214,16 @@ class HybridSubsetFeatureSelection:
 
     def save_info(self, path=None):
         if path:
-            return records_list_to_dataframe(self.create_records_list()).to_excel(path)
-        return records_list_to_dataframe(self.create_records_list()).to_excel(self.path)
+            return save_records_list_to_excel(self.create_records_list(), path)
+        return save_records_list_to_excel(self.create_records_list(), self.path)
 
     def get_features_ranking(self):
         pass
 
     def get_test_metrics(self):
         pass
+
+
+def save_records_list_to_excel(data, path="generated_excel_file.xlsx"):
+
+    return records_list_to_dataframe(data).to_excel(path)
