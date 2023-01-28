@@ -102,7 +102,7 @@ def get_subset_data_based_on_columns(data, subset_columns_list):
 
 
 class HybridSubsetFeatureSelection:
-    def __init__(self, clf_data=None, clf_y=None, path='Hybrid_subset_feature_selection_data.json'):
+    def __init__(self, clf_data=None, clf_y=None, path='Hybrid_subset_feature_selection_data.xlsx'):
         self.path = path
         self.clf_y = clf_y
         self.clf_data = clf_data
@@ -136,6 +136,7 @@ class HybridSubsetFeatureSelection:
 
                 if tuple(subset_columns) in self.saved_results[tuple(modified_columns)]:  # dynamic_programming_dict
                     continue
+                self.saved_results[tuple(modified_columns)][tuple(subset_columns)] = dict()
 
                 subset_data = get_subset_data_based_on_columns(modified_data, subset_columns)
 
@@ -145,8 +146,7 @@ class HybridSubsetFeatureSelection:
                     cv_number += 1
 
                     metric_data = ModelTesting(dataset[0], dataset[1], dataset[2], dataset[3]).get_all_models()
-                    self.saved_results[tuple(modified_columns)][tuple(subset_columns)] = {cv_name: metric_data}
-                    # self.update_json()
+                    self.saved_results[tuple(modified_columns)][tuple(subset_columns)][cv_name] = metric_data
 
         feature_selection_data = FeatureSelectionAuto(modified_data, self.clf_y).get_all()
 
@@ -157,6 +157,7 @@ class HybridSubsetFeatureSelection:
 
             if tuple(subset_columns) in self.saved_results[tuple(modified_columns)]:  # dynamic_programming_dict
                 continue
+            self.saved_results[tuple(modified_columns)][tuple(subset_columns)] = dict()
 
             subset_data = get_subset_data_based_on_columns(modified_data, subset_columns)
 
@@ -166,37 +167,35 @@ class HybridSubsetFeatureSelection:
                 cv_number += 1
 
                 metric_data = ModelTesting(dataset[0], dataset[1], dataset[2], dataset[3]).get_all_models()
-                self.saved_results[tuple(modified_columns)][tuple(subset_columns)] = {cv_name: metric_data}
-                # self.update_json()
-                print(self.saved_results)
+                self.saved_results[tuple(modified_columns)][tuple(subset_columns)][cv_name] = metric_data
 
         self.save_info()
 
     def create_records_list(self):
         records_list = []
 
-        for modified_cols in self.saved_results:
+        for modified_cols in self.saved_results.keys():
 
-            for subsets in self.saved_results[modified_cols]:
+            for subsets in self.saved_results[modified_cols].keys():
 
-                for cv in self.saved_results[modified_cols][subsets]:
+                for cv in self.saved_results[modified_cols][subsets].keys():
 
-                    for mls in self.saved_results[modified_cols][subsets][cv]:
-
-                        for ml in self.saved_results[modified_cols][subsets][cv][mls]:
-                            record = {'After Filter Columns': self.saved_results[modified_cols],
-                                      'Subset': self.saved_results[modified_cols][subsets],
-                                      'Cross validation': self.saved_results[modified_cols][subsets][cv],
-                                      'Machine Learning Algorithm': self.saved_results[modified_cols][subsets][cv][mls],
-                                      **self.saved_results[modified_cols][subsets][cv][mls][ml]}
-                            records_list.append(record)
+                    for mls in self.saved_results[modified_cols][subsets][cv].keys():
+                        record = {'After Filter Columns': modified_cols,
+                                  'Subset': subsets,
+                                  'Subset Length': len(subsets),
+                                  'Cross validation': cv,
+                                  'Machine Learning Algorithm': mls,
+                                  **self.saved_results[modified_cols][subsets][cv][mls]
+                                  }
+                        records_list.append(record)
 
         return records_list
 
     def save_info(self, path=None):
         if path:
-            return records_list_to_dataframe(self.create_records_list()).to_csv(path)
-        return records_list_to_dataframe(self.create_records_list()).to_csv(self.path)
+            return records_list_to_dataframe(self.create_records_list()).to_excel(path)
+        return records_list_to_dataframe(self.create_records_list()).to_excel(self.path)
 
     def get_features_ranking(self):
         pass

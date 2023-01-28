@@ -13,7 +13,6 @@ https://github.com/navdeep-G/samplemod
 # here = pathlib.Path(__file__).parent.resolve()
 import setuptools
 
-
 # Get the long description from the README file
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
@@ -50,7 +49,7 @@ setuptools.setup(
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
-    description='A sample Python project',  # Optional
+    description='A Python feature selection project',  # Optional
 
     # description="A python project for easily launching custom automated browser to reduce repetitive boring work.",
     # This is an optional longer description of your project that represents
@@ -83,7 +82,7 @@ setuptools.setup(
 
     # This should be your name or the name of the organization which owns the
     # project.
-    author='A. Random Developer',  # Optional
+    author='Chandravesh Chaudhari',  # Optional
 
     # author="Chandravesh Chaudhari",
     # This should be a valid email address corresponding to the author listed
@@ -143,7 +142,7 @@ setuptools.setup(
     #
     #   py_modules=["my_module"],
     #
-    packages=find_packages(where='src'),  # Required
+    packages=setuptools.find_packages(where='src'),  # Required
 
     # packages=find_packages(exclude=('tests', 'docs')),
     # Specify which Python versions you support. In contrast to the
@@ -158,26 +157,22 @@ setuptools.setup(
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['certifi>=2021.5.30',
-                      'charset-normalizer>=2.0.4',
-                      'colorama>=0.4.4',
-                      'configparser>=5.0.2',
-                      'crayons>=0.4.0',
-                      'idna>=3.2',
-                      'MouseInfo>=0.1.3',
-                      'Pillow>=8.3.1',
-                      'PyAutoGUI>=0.9.53',
-                      'PyGetWindow>=0.0.9',
-                      'PyMsgBox>=1.0.9',
-                      'pyperclip>=1.8.2',
-                      'PyRect>=0.1.4',
-                      'PyScreeze>=0.1.27',
-                      'python3-xlib>=0.15',
-                      'PyTweening>=1.0.3',
-                      'requests>=2.26.0',
-                      'selenium>=3.141.0',
-                      'urllib3>=1.26.6',
-                      'webdriver-manager>=3.4.2'],  # Optional
+    install_requires=['keras==2.11.0',
+                      'mlxtend==0.21.0',
+                      'pandas==1.5.2',
+                      'ReliefF==0.1.2',
+                      'scipy==1.9.3',
+                      'shap==0.41.0',
+                      'sklearn==0.0.post1',
+                      'skrebate==0.62',
+                      'systematic-reviewpy==0.0.1',
+                      'tensorboard==2.11.0',
+                      'tensorboard-data-server==0.6.1',
+                      'tensorboard-plugin-wit==1.8.1',
+                      'tensorflow==2.11.0',
+                      'tensorflow-estimator==2.11.0',
+                      'tensorflow-io-gcs-filesystem==0.29.0',
+                      'xgboost==1.7.2'],  # Optional
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
@@ -216,7 +211,7 @@ setuptools.setup(
     #    'console_scripts': [
     #        'sample=sample:main',
     #    ],
-    #},
+    # },
 
     # List additional URLs that are relevant to your project as a dict.
     #
@@ -228,9 +223,9 @@ setuptools.setup(
     # maintainers, and where to support the project financially. The key is
     # what's used to render the link text on PyPI.
     project_urls={  # Optional
-        "Bug Tracker": "https://github.com/chandraveshchaudhari/browser-automationpy/issues",
-        'Bug Reports': 'https://github.com/chandraveshchaudhari/browser-automationpy/issues',
+        "Bug Tracker": "https://github.com/chandraveshchaudhari/hybrid-feature-selection/issues",
+        'Bug Reports': 'https://github.com/chandraveshchaudhari/hybrid-feature-selection/issues',
         'Say Thanks!': 'https://saythanks.io/to/chandraveshchaudhari',
-        'Source': 'https://github.com/chandraveshchaudhari/browser-automationpy/',
+        'Source': 'https://github.com/chandraveshchaudhari/hybrid-feature-selection/',
     },
 )
