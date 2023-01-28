@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 import pandas as pd
-from systematic_review.converter import write_json_file_with_dict, json_file_to_dict
+from systematic_review.converter import records_list_to_dataframe
 
 from feature_selection.algorithms import Filter, AllFeatureSelection, FeatureSelectionAuto
 from feature_selection.machine_learning_algorithms import ModelTesting
@@ -38,7 +38,7 @@ class FeaturesData:
 
 
 class CrossValidationKFold:
-    def __init__(self, clf_subset_data, clf_y, n_splits=5):
+    def __init__(self, clf_subset_data, clf_y, n_splits=4):
         self.n_splits = n_splits
         self.clf_subset_data = clf_subset_data
         self.clf_y = clf_y
@@ -89,8 +89,8 @@ class CrossValidationKFold:
                 df_post_x = self.clf_subset_data.iloc[index[1]:]
                 df_post_y = self.clf_y.iloc[index[1]:]
 
-                clf_x_train = pd.concat([df_pre_x, df_post_x], axis=1)
-                clf_x_test = pd.concat([df_pre_y, df_post_y], axis=1)
+                clf_x_train = pd.concat([df_pre_x, df_post_x])
+                clf_x_test = pd.concat([df_pre_y, df_post_y])
 
             kfolds_datasets.append([clf_x_train, clf_x_test, clf_y_train, clf_y_test])
 
@@ -102,22 +102,26 @@ def get_subset_data_based_on_columns(data, subset_columns_list):
 
 
 class HybridSubsetFeatureSelection:
-    def __init__(self, clf_data=None, clf_y=None, json_path='Hybrid_subset_feature_selection_data.json'):
-        self.json_path = json_path
+    def __init__(self, clf_data=None, clf_y=None, path='Hybrid_subset_feature_selection_data.json'):
+        self.path = path
         self.clf_y = clf_y
         self.clf_data = clf_data
         self.saved_results = dict()
 
-    def generate_subsets(self, apply_filter=True):
+    def generate_subsets(self, apply_filter=True, number_of_top_features_to_select_start=1,
+                         number_of_top_features_to_select_end=None):
         if apply_filter:
             modified_data = Filter(self.clf_data).sequential_all()
         else:
             modified_data = self.clf_data
 
         modified_columns = modified_data.columns
+        if not number_of_top_features_to_select_end:
+            number_of_top_features_to_select_end = len(modified_columns)
         self.saved_results[tuple(modified_columns)] = dict()
 
-        for number_of_top_features_to_select in range(1, len(modified_columns)):
+        for number_of_top_features_to_select in range(number_of_top_features_to_select_start,
+                                                      number_of_top_features_to_select_end):
             print(number_of_top_features_to_select)
             feature_selection_data = AllFeatureSelection(modified_data,
                                                          self.clf_y,
@@ -142,8 +146,7 @@ class HybridSubsetFeatureSelection:
 
                     metric_data = ModelTesting(dataset[0], dataset[1], dataset[2], dataset[3]).get_all_models()
                     self.saved_results[tuple(modified_columns)][tuple(subset_columns)] = {cv_name: metric_data}
-                    #self.update_json()
-                    print(self.saved_results)
+                    # self.update_json()
 
         feature_selection_data = FeatureSelectionAuto(modified_data, self.clf_y).get_all()
 
@@ -164,16 +167,36 @@ class HybridSubsetFeatureSelection:
 
                 metric_data = ModelTesting(dataset[0], dataset[1], dataset[2], dataset[3]).get_all_models()
                 self.saved_results[tuple(modified_columns)][tuple(subset_columns)] = {cv_name: metric_data}
-                #self.update_json()
+                # self.update_json()
                 print(self.saved_results)
 
-    def update_json(self):
-        write_json_file_with_dict(self.json_path, self.saved_results)
+        self.save_info()
 
-    def get_all_json_info(self, path=None):
+    def create_records_list(self):
+        records_list = []
+
+        for modified_cols in self.saved_results:
+
+            for subsets in self.saved_results[modified_cols]:
+
+                for cv in self.saved_results[modified_cols][subsets]:
+
+                    for mls in self.saved_results[modified_cols][subsets][cv]:
+
+                        for ml in self.saved_results[modified_cols][subsets][cv][mls]:
+                            record = {'After Filter Columns': self.saved_results[modified_cols],
+                                      'Subset': self.saved_results[modified_cols][subsets],
+                                      'Cross validation': self.saved_results[modified_cols][subsets][cv],
+                                      'Machine Learning Algorithm': self.saved_results[modified_cols][subsets][cv][mls],
+                                      **self.saved_results[modified_cols][subsets][cv][mls][ml]}
+                            records_list.append(record)
+
+        return records_list
+
+    def save_info(self, path=None):
         if path:
-            return json_file_to_dict(path)
-        return json_file_to_dict(self.json_path)
+            return records_list_to_dataframe(self.create_records_list()).to_csv(path)
+        return records_list_to_dataframe(self.create_records_list()).to_csv(self.path)
 
     def get_features_ranking(self):
         pass
