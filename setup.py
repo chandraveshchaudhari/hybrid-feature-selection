@@ -43,7 +43,7 @@ setuptools.setup(
     # For a discussion on single-sourcing the version across setup.py and the
     # project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.0.2',  # Required
+    version='0.0.3',  # Required
 
     # version="0.0.14",
     # This is a one-line description or tagline of what your project does. This
@@ -87,7 +87,7 @@ setuptools.setup(
     # author="Chandravesh Chaudhari",
     # This should be a valid email address corresponding to the author listed
     # above.
-    author_email='author@example.com',  # Optional
+    author_email='chandraveshchaudhari@example.com',  # Optional
 
     # author_email="chandraveshchaudhari@gmail.com",
     # Classifiers help users find your project by categorizing it.
