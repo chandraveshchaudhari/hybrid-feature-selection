@@ -1,0 +1,16 @@
+keras==2.11.0
+mlxtend==0.21.0
+pandas==1.5.2
+ReliefF==0.1.2
+scipy==1.9.3
+shap==0.41.0
+scikit-learn
+skrebate==0.62
+systematic-reviewpy==0.0.1
+tensorboard==2.11.0
+tensorboard-data-server==0.6.1
+tensorboard-plugin-wit==1.8.1
+tensorflow==2.11.0
+tensorflow-estimator==2.11.0
+tensorflow-io-gcs-filesystem==0.29.0
+xgboost==1.7.2

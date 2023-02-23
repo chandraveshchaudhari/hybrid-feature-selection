@@ -1,0 +1,19 @@
+INSTRUCTIONS.md
+LICENSE.txt
+MANIFEST.in
+README.md
+setup.py
+data/.$hybrid subset feature selection.drawio.bkp
+data/hybrid subset feature selection.drawio
+data/hybrid subset feature selection.drawio.pdf
+data/hybrid subset feature selection.drawio.png
+data/instruction.txt
+src/feature_selection/__init__.py
+src/feature_selection/algorithms.py
+src/feature_selection/hybrid_algorithms.py
+src/feature_selection/machine_learning_algorithms.py
+src/feature_selectionpy.egg-info/PKG-INFO
+src/feature_selectionpy.egg-info/SOURCES.txt
+src/feature_selectionpy.egg-info/dependency_links.txt
+src/feature_selectionpy.egg-info/requires.txt
+src/feature_selectionpy.egg-info/top_level.txt
