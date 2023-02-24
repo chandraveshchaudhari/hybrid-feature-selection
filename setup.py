@@ -159,6 +159,7 @@ setuptools.setup(
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=['keras==2.11.0',
                       'mlxtend==0.21.0',
+                      'openpyxl==3.1.1'
                       'pandas==1.5.2',
                       'ReliefF==0.1.2',
                       'scipy==1.9.3',
