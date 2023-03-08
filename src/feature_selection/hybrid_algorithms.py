@@ -1,3 +1,4 @@
+import re
 from collections import defaultdict
 
 import pandas as pd
@@ -125,7 +126,6 @@ def add_data_in_tree_dict(entry_point_dict_node,
 
 
 def models_testing_with_cross_validation(clf_data, clf_y, output_data):
-
     cv_number = 1
     for dataset in CrossValidationKFold(clf_data, clf_y).get_all_folds():
         cv_name = f"fold_{cv_number}"
@@ -222,15 +222,131 @@ class HybridSubsetFeatureSelection:
             return save_records_list_to_excel(self.create_records_list(), path)
         return save_records_list_to_excel(self.create_records_list(), self.path)
 
-    def get_features_ranking(self):
-        pass
 
-    def get_test_metrics(self):
-        pass
+class GetResultsFromHybridSubsetFeatureSelection:
+    def __init__(self, path='Hybrid_subset_feature_selection_data.xlsx'):
+        self.data = pd.read_excel(path)
+        self.df_dict = self.data.to_dict('records')
+
+    def get_best_subset(self):
+
+        tree = dict()
+
+        for record in self.df_dict:
+            #     print(record)
+
+            metric = {'Accuracy Score': record['Accuracy Score'],
+                      'Precision Score': record['Precision Score'],
+                      'Recall Score': record['Recall Score']
+                      }
+
+            if not record['Subset'] in tree:
+                tree[record['Subset']] = dict()
+
+            if not record['Cross validation'] in tree[record['Subset']]:
+                tree[record['Subset']][record['Cross validation']] = dict()
+
+            tree[record['Subset']][record['Cross validation']][record['Machine Learning Algorithm']] = metric
+
+        compress_dict = dict()
+        for subset in tree:
+            if subset not in compress_dict:
+                compress_dict[subset] = dict()
+            for cr in tree[subset]:
+                length = len(tree[subset])
+                #         print(length)
+                for ml in tree[subset][cr]:
+                    if ml not in compress_dict[subset]:
+
+                        compress_dict[subset][ml] = tree[subset][cr][ml]
+                        for key, value in compress_dict[subset][ml].items():
+                            compress_dict[subset][ml][key] = value / length
+
+                    #                 print(compress_dict)
+                    else:
+                        for key, value in tree[subset][cr][ml].items():
+                            #                     print(key, value)
+                            compress_dict[subset][ml][key] += value / length
+        #                 print(compress_dict)
+
+        subset_with_best_metric = []
+
+        for subset in compress_dict:
+            records_data = []
+
+            for ml in compress_dict[subset]:
+                record_dict = dict()
+                record_dict['Machine Learning Algorithm'] = ml
+                record_dict.update(compress_dict[subset][ml])
+                records_data.append(record_dict)
+
+            record_df = pd.DataFrame.from_dict(records_data)
+
+            sorted_df = record_df.sort_values(by=['Accuracy Score', 'Precision Score', 'Recall Score'], ascending=False)
+
+            rec = sorted_df[:1].to_dict('records')
+            rec[0].update({'Subset': subset})
+            #     print(rec[0])
+            subset_with_best_metric.append(rec[0])
+
+        last_df = pd.DataFrame.from_dict(subset_with_best_metric)
+        neworder = [last_df.columns[-1], *last_df.columns[:-1]]
+        print(neworder)
+        rearrange_df = last_df.reindex(columns=neworder)
+        rearrange_df = rearrange_df.sort_values(by=['Accuracy Score', 'Precision Score', 'Recall Score'],
+                                                ascending=False)
+        rearrange_df.to_excel('best_subset.xlsx')
+
+    def get_features_importance_based_on_subset_selection(self):
+        main_dict = dict()
+
+        for record_dict in self.df_dict:
+            if not record_dict['Subset Length'] in main_dict:
+                main_dict[record_dict['Subset Length']] = dict()
+
+            financial_variables = re.findall(r"(?<=')[^']+(?=')", record_dict['Subset'])
+            for i in financial_variables:
+                if i != ', ':
+                    if i in main_dict[record_dict['Subset Length']]:
+                        main_dict[record_dict['Subset Length']][i] += 1
+                    else:
+                        main_dict[record_dict['Subset Length']][i] = 1
+
+        unique = set()
+        importance_dict_based_on_subset = dict()
+
+        for subset_length in sorted(main_dict):
+            for financial_var in main_dict[subset_length]:
+                if financial_var in unique:
+                    pass
+                else:
+                    unique.add(financial_var)
+                    if subset_length in importance_dict_based_on_subset:
+                        importance_dict_based_on_subset[subset_length].append(financial_var)
+                    else:
+                        importance_dict_based_on_subset[subset_length] = [financial_var]
+        return importance_dict_based_on_subset, main_dict
+
+    def get_features_importance_based_on_count_of_selection(self):
+        count_dict = dict()
+        main_dict = self.get_features_importance_based_on_subset_selection()[1]
+
+        for record_dict in self.df_dict:
+            if not record_dict['Subset Length'] in count_dict:
+                main_dict[record_dict['Subset Length']] = dict()
+
+            financial_variables = re.findall(r"(?<=')[^']+(?=')", record_dict['Subset'])
+            for i in financial_variables:
+                if i != ', ':
+                    if i in count_dict:
+                        count_dict[i] += 1
+                    else:
+                        count_dict[i] = 1
+
+        return sorted(count_dict.items(), key=lambda item: item[1], reverse=True)
 
 
 def save_records_list_to_excel(data, path="generated_excel_file.xlsx"):
-
     return records_list_to_dataframe(data).to_excel(path)
 
 
