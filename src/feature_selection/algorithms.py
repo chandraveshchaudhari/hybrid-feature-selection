@@ -6,7 +6,6 @@ from feature_selection import sample_func
 """
 import numpy as np
 from sklearn.feature_selection import SelectKBest
-from sklearn.svm import SVC
 from sklearn.feature_selection import RFE
 from sklearn.svm import LinearSVC
 from sklearn.feature_selection import SelectFromModel
@@ -107,14 +106,15 @@ class FeatureSelectionNamesOut:
 
     def recursive_feature_elimination_svc(self):
         print('recursive_feature_elimination_svc')
-        svc = SVC(kernel="linear", C=1)
+
+        svc = LinearSVC(random_state=0, tol=1e-5, max_iter=2000)
         sel = RFE(estimator=svc, n_features_to_select=self.k, step=1)
         sel.fit(self.clf_data, self.clf_y)
         return list(sel.get_feature_names_out(self.clf_data.columns))
 
     def recursive_feature_elimination_relief_f(self):
         print('recursive_feature_elimination_relief_f')
-        fs = RFE(ReliefF(), n_features_to_select=self.k, step=0.5)
+        fs = RFE(ReliefF(), n_features_to_select=self.k, step=1)
         fs.fit(self.clf_data, self.labels)
         return list(fs.get_feature_names_out())
 
@@ -178,12 +178,17 @@ class FeatureSelectionNamesScore:
 
     def get_turf(self):
         print('get_turf')
+
+        features, labels = self.clf_data.values, self.clf_y.values
+        headers = list(self.clf_data.columns)
+
         fs = TuRF(core_algorithm="ReliefF", n_features_to_select=self.k, pct=0.5, verbose=True)
         try:
-            fs.fit(self.features, self.labels, self.headers)
-            return converting_feature_importance_to_sorted_dict(self.headers, fs.feature_importances_)
-        except AttributeError:
-            print("AttributeError")
+            print(headers)
+            fs.fit(features, labels, headers)
+            return converting_feature_importance_to_sorted_dict(headers, fs.feature_importances_)
+        except Exception as e:
+            print(f"Error {e}")
             return None
 
 
@@ -226,6 +231,7 @@ class AllFeatureSelection:
             'sequential_feature_selector_k_neighbors_classifier': sel.get_sequential_feature_selector_k_neighbors_classifier(),
             'recursive_feature_elimination_relief_f': sel.recursive_feature_elimination_relief_f(),
             'recursive_feature_elimination_svc': sel.recursive_feature_elimination_svc()}
+        #
         return sel_result_dict
 
     def get_names_score_out(self):

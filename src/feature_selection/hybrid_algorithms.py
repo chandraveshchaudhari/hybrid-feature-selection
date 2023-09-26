@@ -228,7 +228,7 @@ class GetResultsFromHybridSubsetFeatureSelection:
         self.data = pd.read_excel(path)
         self.df_dict = self.data.to_dict('records')
 
-    def get_best_subset(self):
+    def get_all_subset(self):
 
         tree = dict()
 
@@ -291,11 +291,29 @@ class GetResultsFromHybridSubsetFeatureSelection:
 
         last_df = pd.DataFrame.from_dict(subset_with_best_metric)
         neworder = [last_df.columns[-1], *last_df.columns[:-1]]
-        print(neworder)
         rearrange_df = last_df.reindex(columns=neworder)
         rearrange_df = rearrange_df.sort_values(by=['Accuracy Score', 'Precision Score', 'Recall Score'],
                                                 ascending=False)
         rearrange_df.to_excel('best_subset.xlsx')
+        # return the first row of the dataframe
+        return rearrange_df
+
+    def get_best_subset(self):
+        variables = []
+        subset = self.get_all_subset().iloc[0]['Subset']
+        financial_variables = re.findall(r"(?<=')[^']+(?=')", subset)
+        for i in financial_variables:
+            if i != ', ':
+                variables.append(i)
+
+        return variables
+
+    def get_best_subset_dataframe(self):
+        variables_list = self.get_best_subset()
+        records = []
+        for variable in variables_list:
+            records.append({'Financial Variable': variable})
+        return pd.DataFrame.from_dict(records)
 
     def get_features_importance_based_on_subset_selection(self):
         main_dict = dict()
@@ -327,6 +345,17 @@ class GetResultsFromHybridSubsetFeatureSelection:
                         importance_dict_based_on_subset[subset_length] = [financial_var]
         return importance_dict_based_on_subset, main_dict
 
+    def get_features_importance_based_on_subset_selection_dataframe(self):
+        records = []
+        for subset_length in self.get_features_importance_based_on_subset_selection()[0]:
+            strip_list_financial_variables = [i.strip() for i in self.get_features_importance_based_on_subset_selection()[0][
+                                subset_length]]
+            financial_variables = ", ".join(list(strip_list_financial_variables))
+            records.append({'Subset Length': subset_length,
+                            'Financial Variable': financial_variables})
+
+        return pd.DataFrame.from_dict(records)
+
     def get_features_importance_based_on_count_of_selection(self):
         count_dict = dict()
         main_dict = self.get_features_importance_based_on_subset_selection()[1]
@@ -344,6 +373,14 @@ class GetResultsFromHybridSubsetFeatureSelection:
                         count_dict[i] = 1
 
         return sorted(count_dict.items(), key=lambda item: item[1], reverse=True)
+
+    def get_features_importance_based_on_count_of_selection_dataframe(self):
+        importance_dict_based_on_subset = self.get_features_importance_based_on_count_of_selection()
+        records = []
+        for financial_var in importance_dict_based_on_subset:
+
+            records.append({'Financial Variable': financial_var[0], 'count of selection in subset': financial_var[1]})
+        return pd.DataFrame.from_dict(records)
 
 
 def save_records_list_to_excel(data, path="generated_excel_file.xlsx"):
