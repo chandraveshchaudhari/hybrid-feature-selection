@@ -236,12 +236,14 @@ class AllFeatureSelection:
 
     def get_names_score_out(self):
         sel = FeatureSelectionNamesScore(self.clf_data, self.clf_y, self.k)
-        sel_result_list = [sel.get_multi_surf(),
+        sel_result_list = [
+            sel.get_multi_surf(),
                            sel.get_multi_surf_star(),
                            sel.get_relief_f(),
                            sel.get_turf(),
                            sel.get_surf(),
-                           sel.get_surf_star()]
+                           sel.get_surf_star()
+            ]
         result = []
         for res in sel_result_list:
             if res is not None:
@@ -249,12 +251,14 @@ class AllFeatureSelection:
             else:
                 result.append(None)
 
-        result_dict = {'multi surf': result[0],
-                       'multi surf star': result[1],
-                       'relief f': result[2],
-                       'turf': result[3],
-                       'surf': result[4],
-                       'surf_star': result[5]}
+        name_list = [
+            'multi surf',
+                     'multi surf star',
+                     'relief f',
+            'turf', 'surf', 'surf_star']
+        for i in range(len(result)):
+            result_dict = {name_list[i]: result[i]}
+        
         return result_dict
 
     def get_names_from_all(self):

@@ -38,14 +38,44 @@ class FeaturesData:
         return counter_dict
 
 
-class CrossValidationKFold:
-    def __init__(self, clf_subset_data, clf_y, n_splits=4):
+class ScikitKFold:
+    def __init__(self, clf_subset_data, clf_y, n_splits=3):
+        self.n_splits = n_splits
+        self.clf_subset_data = clf_subset_data
+        self.clf_y = clf_y
+
+    def get_all_folds(self):
+        kfolds_datasets = []
+        from sklearn.model_selection import KFold
+
+        kf = KFold(n_splits=self.n_splits, shuffle=True, random_state=42)  # Set random state for reproducibility
+        print(kf)
+
+        for train_index, test_index in kf.split(self.clf_subset_data):  # Assuming X is your data
+            # Use .iloc for indexing by position with DataFrames
+            x_train = self.clf_subset_data.iloc[train_index]
+            x_test = self.clf_subset_data.iloc[test_index]
+            y_train = self.clf_y.iloc[train_index]
+            y_test = self.clf_y.iloc[test_index]  # Assuming y is your target variable
+            print(x_train, x_test, y_train, y_test)
+
+            kfolds_datasets.append([x_train, x_test, y_train, y_test])
+
+        return kfolds_datasets
+
+
+class SeparateDataPortions:
+    def __init__(self, clf_subset_data, clf_y, n_splits=3):
         self.n_splits = n_splits
         self.clf_subset_data = clf_subset_data
         self.clf_y = clf_y
         self.length = len(self.clf_subset_data)
 
     def k_fold_steps(self):
+        """
+        split_index is used for creating testing dataset and rest is taken as training dataset.
+        :return:
+        """
         split_index = self.length // self.n_splits
 
         result = [[0, split_index]]
@@ -63,7 +93,10 @@ class CrossValidationKFold:
         return result
 
     def get_all_folds(self):
-        # problem in fold 2>>>> showing null values
+        """
+        This function will return the training and testing data for each fold.
+        :return:
+        """
         kfolds_index_list = self.k_fold_steps()
 
         kfolds_datasets = []
@@ -71,18 +104,15 @@ class CrossValidationKFold:
             training = kfolds_index_list.copy()
             training.remove(index)
 
-            clf_y_train = self.clf_subset_data.iloc[index[0]:index[1]]
+            clf_x_test = self.clf_subset_data.iloc[index[0]:index[1]]
             clf_y_test = self.clf_y.iloc[index[0]:index[1]]
 
             if index[0] == 0:
                 clf_x_train = self.clf_subset_data.iloc[index[1]:]
-                clf_x_test = self.clf_y.iloc[index[1]:]
+                clf_y_train = self.clf_y.iloc[index[1]:]
             elif index == kfolds_index_list[-1]:
-                clf_y_train = self.clf_subset_data.iloc[index[0]:index[1]]
-                clf_y_test = self.clf_y.iloc[index[0]:index[1]]
-
                 clf_x_train = self.clf_subset_data.iloc[:index[0]]
-                clf_x_test = self.clf_y.iloc[:index[0]]
+                clf_y_train = self.clf_y.iloc[:index[0]]
             else:
                 df_pre_x = self.clf_subset_data.iloc[:index[0]]
                 df_pre_y = self.clf_y.iloc[:index[0]]
@@ -91,9 +121,9 @@ class CrossValidationKFold:
                 df_post_y = self.clf_y.iloc[index[1]:]
 
                 clf_x_train = pd.concat([df_pre_x, df_post_x])
-                clf_x_test = pd.concat([df_pre_y, df_post_y])
+                clf_y_train = pd.concat([df_pre_y, df_post_y])
 
-            kfolds_datasets.append([clf_x_train, clf_x_test, clf_y_train, clf_y_test])
+            kfolds_datasets.append([clf_x_train, clf_y_train, clf_x_test, clf_y_test])
 
         return kfolds_datasets
 
@@ -103,7 +133,7 @@ def get_subset_data_based_on_columns(data, subset_columns_list):
 
 
 def add_data_in_tree_dict(entry_point_dict_node,
-                          feature_selection_data=None, modified_data=None, clf_y=None):
+                          feature_selection_data=None, modified_data=None, clf_y=None, n_splits=3):
     for feature_algorithm_name, subset_columns in feature_selection_data.items():
         if subset_columns is dict:
             subset_columns = list(subset_columns.keys())
@@ -122,12 +152,16 @@ def add_data_in_tree_dict(entry_point_dict_node,
         subset_data = get_subset_data_based_on_columns(modified_data, subset_columns)
 
         models_testing_with_cross_validation(subset_data, clf_y,
-                                             entry_point_dict_node[tuple(subset_columns)][feature_algorithm_name])
+                                             entry_point_dict_node[tuple(subset_columns)][feature_algorithm_name],
+                                             n_splits=n_splits)
 
 
-def models_testing_with_cross_validation(clf_data, clf_y, output_data):
+def models_testing_with_cross_validation(clf_data, clf_y, output_data, n_splits=3):
     cv_number = 1
-    for dataset in CrossValidationKFold(clf_data, clf_y).get_all_folds():
+    for dataset in SeparateDataPortions(clf_data, clf_y, n_splits=n_splits).get_all_folds():
+        print(" X_train, y_train, X_test, y_test")
+        for i in dataset:
+            print(i.shape)
         cv_name = f"fold_{cv_number}"
         print(cv_name)
         cv_number += 1
@@ -153,6 +187,16 @@ def get_records_from_models_testing_with_cross_validation(clf_data=None, clf_y=N
     return record_list
 
 
+def get_sorted_subset_variables_using_regex(subset_string):
+    variables = []
+    financial_variables = re.findall(r"(?<=')[^']+(?=')", subset_string)
+    for i in financial_variables:
+        if i != ', ':
+            variables.append(i)
+
+    return sorted(variables)
+
+
 class HybridSubsetFeatureSelection:
     def __init__(self, clf_data=None, clf_y=None, path='Hybrid_subset_feature_selection_data.xlsx'):
         self.path = path
@@ -161,7 +205,7 @@ class HybridSubsetFeatureSelection:
         self.saved_results = dict()
 
     def generate_subsets(self, apply_filter=True, number_of_top_features_to_select_start=1,
-                         number_of_top_features_to_select_end=None):
+                         number_of_top_features_to_select_end=None, n_splits=3):
         if apply_filter:
             modified_data = Filter(self.clf_data).sequential_all()
         else:
@@ -181,14 +225,14 @@ class HybridSubsetFeatureSelection:
                                                          self.clf_y,
                                                          number_of_top_features_to_select).get_names_from_all()
             add_data_in_tree_dict(self.saved_results[tuple(modified_columns)], feature_selection_data,
-                                  modified_data, self.clf_y)
+                                  modified_data, self.clf_y, n_splits=n_splits)
             self.save_info(f"iteration_{number_of_top_features_to_select}.xlsx")
 
         feature_selection_data = FeatureSelectionAuto(modified_data, self.clf_y).get_all()
         string_writer(f"auto feature selection \n")
 
         add_data_in_tree_dict(self.saved_results[tuple(modified_columns)], feature_selection_data,
-                              modified_data, self.clf_y)
+                              modified_data, self.clf_y, n_splits=n_splits)
 
         self.save_info()
 
@@ -227,27 +271,28 @@ class GetResultsFromHybridSubsetFeatureSelection:
     def __init__(self, path='Hybrid_subset_feature_selection_data.xlsx'):
         self.data = pd.read_excel(path)
         self.df_dict = self.data.to_dict('records')
+        self.sorting_columns = ['Balanced Accuracy', 'Accuracy Score',
+                                'Precision Score', 'Recall Score']
 
     def get_all_subset(self):
 
-        tree = dict()
+        tree = self.generate_tree()
 
-        for record in self.df_dict:
-            #     print(record)
+        compress_dict = self.get_compress_dict(tree)
 
-            metric = {'Accuracy Score': record['Accuracy Score'],
-                      'Precision Score': record['Precision Score'],
-                      'Recall Score': record['Recall Score']
-                      }
+        subset_with_best_metric = self.get_subset_with_best_metric(compress_dict)
 
-            if not record['Subset'] in tree:
-                tree[record['Subset']] = dict()
+        last_df = pd.DataFrame.from_dict(subset_with_best_metric)
+        neworder = [last_df.columns[-1], *last_df.columns[:-1]]
+        rearrange_df = last_df.reindex(columns=neworder)
+        rearrange_df = rearrange_df.sort_values(
+            by=self.sorting_columns,
+            ascending=False)
+        rearrange_df.to_excel('best_subset.xlsx')
+        # return the first row of the dataframe
+        return rearrange_df
 
-            if not record['Cross validation'] in tree[record['Subset']]:
-                tree[record['Subset']][record['Cross validation']] = dict()
-
-            tree[record['Subset']][record['Cross validation']][record['Machine Learning Algorithm']] = metric
-
+    def get_compress_dict(self, tree):
         compress_dict = dict()
         for subset in tree:
             if subset not in compress_dict:
@@ -268,9 +313,30 @@ class GetResultsFromHybridSubsetFeatureSelection:
                             #                     print(key, value)
                             compress_dict[subset][ml][key] += value / length
         #                 print(compress_dict)
+        return compress_dict
 
+    def generate_tree(self):
+        tree = dict()
+        for record in self.df_dict:
+            #     print(record)
+
+            metric = {'Balanced Accuracy': record['Balanced Accuracy'],
+                      'Accuracy Score': record['Accuracy Score'],
+                      'Precision Score': record['Precision Score'],
+                      'Recall Score': record['Recall Score']
+                      }
+
+            if not record['Subset'] in tree:
+                tree[record['Subset']] = dict()
+
+            if not record['Cross validation'] in tree[record['Subset']]:
+                tree[record['Subset']][record['Cross validation']] = dict()
+
+            tree[record['Subset']][record['Cross validation']][record['Machine Learning Algorithm']] = metric
+        return tree
+
+    def get_subset_with_best_metric(self, compress_dict):
         subset_with_best_metric = []
-
         for subset in compress_dict:
             records_data = []
 
@@ -282,38 +348,45 @@ class GetResultsFromHybridSubsetFeatureSelection:
 
             record_df = pd.DataFrame.from_dict(records_data)
 
-            sorted_df = record_df.sort_values(by=['Accuracy Score', 'Precision Score', 'Recall Score'], ascending=False)
+            sorted_df = record_df.sort_values(by=self.sorting_columns, ascending=False)
 
             rec = sorted_df[:1].to_dict('records')
             rec[0].update({'Subset': subset})
             #     print(rec[0])
             subset_with_best_metric.append(rec[0])
+        return subset_with_best_metric
 
-        last_df = pd.DataFrame.from_dict(subset_with_best_metric)
-        neworder = [last_df.columns[-1], *last_df.columns[:-1]]
-        rearrange_df = last_df.reindex(columns=neworder)
-        rearrange_df = rearrange_df.sort_values(by=['Accuracy Score', 'Precision Score', 'Recall Score'],
-                                                ascending=False)
-        rearrange_df.to_excel('best_subset.xlsx')
-        # return the first row of the dataframe
-        return rearrange_df
+    def get_top_best_performing_subset_dataframe(self, top=10, metric='Balanced Accuracy'):
+        subset_performance_sorted = self.grouped_by_subset(metric)
 
-    def get_best_subset(self):
-        variables = []
-        subset = self.get_all_subset().iloc[0]['Subset']
-        financial_variables = re.findall(r"(?<=')[^']+(?=')", subset)
-        for i in financial_variables:
-            if i != ', ':
-                variables.append(i)
+        # Select the top 10 subsets
+        top_10_subsets = subset_performance_sorted.head(top)
 
-        return variables
+        # Reset index to add a numerical order
+        top_10_subsets.reset_index(inplace=True)
 
-    def get_best_subset_dataframe(self):
-        variables_list = self.get_best_subset()
-        records = []
-        for variable in variables_list:
-            records.append({'Financial Variable': variable})
-        return pd.DataFrame.from_dict(records)
+        # Add numerical order to the DataFrame at first column
+        top_10_subsets.insert(0, 'Ranking', range(1, top + 1))
+
+        # Display the DataFrame depicting the top 10 subsets and their order
+        return top_10_subsets
+
+    def grouped_by_subset(self, metric):
+        # Calculate the mean of accuracy, precision, and recall scores for each subset
+        subset_performance = self.get_all_subset().groupby('Subset')[self.sorting_columns].mean()
+        # Sort the subsets based on their combined performance score in descending order
+        subset_performance_sorted = subset_performance.sort_values(by=metric, ascending=False)
+        return subset_performance_sorted
+
+    def sorted_by_length_group_by_subset(self, metric='Balanced Accuracy'):
+        grouped_by_subset_df = self.grouped_by_subset(metric)
+        grouped_by_subset_df = grouped_by_subset_df.reset_index()
+        grouped_by_subset_df['Subset Length'] = grouped_by_subset_df['Subset'].map(find_subset_length)
+        sorted_by_length = grouped_by_subset_df.groupby("Subset Length")[[metric]].mean()
+
+        # Sort the subsets based on their combined performance score in descending order
+        sorted_by_length_metric = sorted_by_length.sort_values(by=metric, ascending=False)
+        return sorted_by_length_metric
 
     def get_features_importance_based_on_subset_selection(self):
         main_dict = dict()
@@ -348,8 +421,9 @@ class GetResultsFromHybridSubsetFeatureSelection:
     def get_features_importance_based_on_subset_selection_dataframe(self):
         records = []
         for subset_length in self.get_features_importance_based_on_subset_selection()[0]:
-            strip_list_financial_variables = [i.strip() for i in self.get_features_importance_based_on_subset_selection()[0][
-                                subset_length]]
+            strip_list_financial_variables = [i.strip() for i in
+                                              self.get_features_importance_based_on_subset_selection()[0][
+                                                  subset_length]]
             financial_variables = ", ".join(list(strip_list_financial_variables))
             records.append({'Subset Length': subset_length,
                             'Financial Variable': financial_variables})
@@ -378,7 +452,6 @@ class GetResultsFromHybridSubsetFeatureSelection:
         importance_dict_based_on_subset = self.get_features_importance_based_on_count_of_selection()
         records = []
         for financial_var in importance_dict_based_on_subset:
-
             records.append({'Financial Variable': financial_var[0], 'count of selection in subset': financial_var[1]})
         return pd.DataFrame.from_dict(records)
 
@@ -390,3 +463,15 @@ def save_records_list_to_excel(data, path="generated_excel_file.xlsx"):
 def string_writer(data_string, path='log_file.txt'):
     with open(path, 'a+') as file:
         file.writelines(data_string)
+
+
+def find_subset_length(string):
+    import re
+    length = 0
+    financial_variables = re.findall(r"(?<=')[^']+(?=')", string)
+    for i in financial_variables:
+        if i == ', ':
+            continue
+        length += 1
+
+    return length

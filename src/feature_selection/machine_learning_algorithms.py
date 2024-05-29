@@ -1,9 +1,22 @@
 from sklearn.linear_model import LogisticRegression
 from sklearn import svm
-from sklearn.metrics import accuracy_score, precision_score, recall_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, confusion_matrix, balanced_accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
 from tensorflow import keras
 from keras import layers
+
+
+def matrics(y_test, y_pred):
+    tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+    return {'Accuracy Score': accuracy_score(y_test, y_pred) * 100,
+            'Precision Score': precision_score(y_test, y_pred) * 100,
+            'Recall Score': recall_score(y_test, y_pred) * 100,
+            'Balanced Accuracy': balanced_accuracy_score(y_test, y_pred) * 100,
+            'True Negative': tn,
+            'False Positive': fp,
+            'False Negative': fn,
+            'True Positive': tp
+            }
 
 
 # logistic regression
@@ -12,9 +25,7 @@ def get_logistic_regression(X_train, y_train, X_test, y_test):
     clf.fit(X_train, y_train)
     # Make predictions using the testing set
     y_pred = clf.predict(X_test)
-    return {'Accuracy Score': accuracy_score(y_test, y_pred) * 100,
-            'Precision Score': precision_score(y_test, y_pred) * 100,
-            'Recall Score': recall_score(y_test, y_pred) * 100}
+    return matrics(y_test, y_pred)
 
 
 # svm.SVC
@@ -23,9 +34,7 @@ def get_svm_svc(X_train, y_train, X_test, y_test):
     clf.fit(X_train, y_train)
     # Make predictions using the testing set
     y_pred = clf.predict(X_test)
-    return {'Accuracy Score': accuracy_score(y_test, y_pred) * 100,
-            'Precision Score': precision_score(y_test, y_pred) * 100,
-            'Recall Score': recall_score(y_test, y_pred) * 100}
+    return matrics(y_test, y_pred)
 
 
 # kNeighbors classifier
@@ -34,9 +43,7 @@ def get_k_neighbors_classifier(X_train, y_train, X_test, y_test):
     clf.fit(X_train, y_train)
     # Make predictions using the testing set
     y_pred = clf.predict(X_test)
-    return {'Accuracy Score': accuracy_score(y_test, y_pred) * 100,
-            'Precision Score': precision_score(y_test, y_pred) * 100,
-            'Recall Score': recall_score(y_test, y_pred) * 100}
+    return matrics(y_test, y_pred)
 
 
 # random forest
@@ -49,9 +56,7 @@ def get_random_forest(X_train, y_train, X_test, y_test):
     # Make predictions using the testing set
     y_pred = clf.predict(X_test)
 
-    return {'Accuracy Score': accuracy_score(y_test, y_pred) * 100,
-            'Precision Score': precision_score(y_test, y_pred) * 100,
-            'Recall Score': recall_score(y_test, y_pred) * 100}
+    return matrics(y_test, y_pred)
 
 
 # neural network
@@ -73,9 +78,7 @@ def get_neural_network(X_train, y_train, X_test, y_test):
         else:
             y_pred.append(1)
 
-    return {'Accuracy Score': accuracy_score(y_test, y_pred) * 100,
-            'Precision Score': precision_score(y_test, y_pred) * 100,
-            'Recall Score': recall_score(y_test, y_pred) * 100}
+    return matrics(y_test, y_pred)
 
 
 class ModelTesting:
@@ -88,8 +91,8 @@ class ModelTesting:
     def get_all_models(self):
         return {'Logistic Regression': get_logistic_regression(self.X_train, self.y_train, self.X_test, self.y_test),
                 'SVM.SVC': get_svm_svc(self.X_train, self.y_train, self.X_test, self.y_test),
-                'K Neighbors Classifier': get_k_neighbors_classifier(self.X_train, self.y_train, self.X_test, self.y_test),
+                'K Neighbors Classifier': get_k_neighbors_classifier(self.X_train, self.y_train, self.X_test,
+                                                                     self.y_test),
                 'Random Forest Classifier': get_random_forest(self.X_train, self.y_train, self.X_test, self.y_test),
                 'Neural Network': get_neural_network(self.X_train, self.y_train, self.X_test, self.y_test)
                 }
-
