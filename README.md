@@ -45,37 +45,11 @@ This work is part of Thesis of [Chandravesh chaudhari][chandravesh linkedin], Do
 - Saves time
 
 ## Installation 
-This project is available at [PyPI](https://pypi.org/project/systematic-reviewpy/). For help in installation check 
+This project is available at [PyPI](https://pypi.org/project/feature-selectionpy/). For help in installation check 
 [instructions](https://packaging.python.org/tutorials/installing-packages/#installing-from-pypi)
 ```bash
-python3 -m pip install systematic-reviewpy  
+python3 -m pip install feature-selectionpy  
 ```
-
-### Dependencies
-##### Required
-- [rispy](https://pypi.org/project/rispy/) - A Python 3.6+ reader/writer of RIS reference files.
-- [pandas](https://pypi.org/project/pandas/) - A Python package that provides fast, flexible, and expressive data 
-structures designed to make working with "relational" or "labeled" data both easy and intuitive.
-##### Optional
-- [browser-automationpy](https://github.com/chandraveshchaudhari/browser-automationpy/)
-- [pdftotext](https://pypi.org/project/pdftotext/) - Simple PDF text extraction
-- [PyMuPDF](https://pypi.org/project/PyMuPDF/) - PyMuPDF (current version 1.19.2) - A Python binding with support for 
-MuPDF, a lightweight PDF, XPS, and E-book viewer, renderer, and toolkit.
-
-## Important links
-- [Documentation](https://chandraveshchaudhari.github.io/systematic-reviewpy/)
-- [Quick tour](https://chandraveshchaudhari.github.io/systematic-reviewpy/systematic-reviewpy%20tutorial.html)
-- [Project maintainer (feel free to contact)](mailto:chandraveshchaudhari@gmail.com?subject=[GitHub]%20Source%20sytematic-reviewpy) 
-- [Future Improvements](https://github.com/chandraveshchaudhari/systematic-reviewpy/projects)
-- [License](https://github.com/chandraveshchaudhari/systematic-reviewpy/blob/master/LICENSE.txt)
-
-## Contribution
-all kinds of contributions are appreciated.
-- [Improving readability of documentation](https://chandraveshchaudhari.github.io/systematic-reviewpy/)
-- [Feature Request](https://github.com/chandraveshchaudhari/systematic-reviewpy/issues/new/choose)
-- [Reporting bugs](https://github.com/chandraveshchaudhari/systematic-reviewpy/issues/new/choose)
-- [Contribute code](https://github.com/chandraveshchaudhari/systematic-reviewpy/compare)
-- [Asking questions in discussions](https://github.com/chandraveshchaudhari/systematic-reviewpy/discussions)
 
 ## Future Improvements
 - [ ] Web based GUI
